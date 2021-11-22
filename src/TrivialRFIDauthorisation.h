@@ -50,7 +50,7 @@ class TrivialRFIDauthorisation {
 		uint8_t flags_start_block_ = 4;											//Block to start flags from
 		uint8_t flags_start_sector_ = 1;										//Sector to start flags from
 		uint8_t trailerBlock_  = 7;
-		bool authenticateWithCard_();											//Authenticate with Key_A
+		bool authenticateWithCard_(uint8_t block);										//Authenticate with Key_A
 		void deAuthenticateWithCard_();											//Deauthenticate after a transaction is done
 		bool readCardFlags_();													//Read the flags from a card
 		bool writeCardFlags_();													//Write the flags to a card

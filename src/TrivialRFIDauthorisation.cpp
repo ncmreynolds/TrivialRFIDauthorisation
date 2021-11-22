@@ -177,11 +177,14 @@ bool TrivialRFIDauthorisation::pollForCard() {
 }
 
 #if defined(ESP8266) || defined(ESP32)
-bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authenticateWithCard_() {
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authenticateWithCard_(uint8_t block) {
 #else
 bool TrivialRFIDauthorisation::authenticateWithCard_() {
 #endif
-	MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.PCD_Authenticate(MFRC522Constants::PICC_Command::PICC_CMD_MF_AUTH_KEY_A, trailerBlock_, &key_, &(rfid_reader_.uid));
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("Authenticating PICC using key A:"));
+	}
+	MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.PCD_Authenticate(MFRC522Constants::PICC_Command::PICC_CMD_MF_AUTH_KEY_A, block, &key_, &(rfid_reader_.uid));
 	if (status != MFRC522::StatusCode::STATUS_OK) {
 		if(debugStream_ != nullptr)
 		{
@@ -189,6 +192,10 @@ bool TrivialRFIDauthorisation::authenticateWithCard_() {
 			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
 		}
 		return(false);
+	}
+	else if(debugStream_ != nullptr)
+	{
+		debugStream_->println(F("success"));
 	}
 	return(true);
 }
@@ -198,19 +205,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::readCardFlags_() {
 #else
 bool TrivialRFIDauthorisation::readCardFlags_() {
 #endif
-	if(debugStream_ != nullptr) {
-		debugStream_->println(F("Authenticating PICC using key A to read card data..."));
-	}
-	MFRC522::MIFARE_Key key_;
-	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-		key_.keyByte[i] = 0xFF;
-	}
 	uint8_t buffer[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //Needs two bytes for the CRC
 	uint8_t size = sizeof(buffer);
 	if(debugStream_ != nullptr)
 	{
-		MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
-		debugStream_->println();
+		//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
 		debugStream_->print("MIFARE_Read() sector ");
 		debugStream_->print(flags_start_sector_);
 		debugStream_->print(" block ");
@@ -295,8 +294,7 @@ bool TrivialRFIDauthorisation::writeCardFlags_() {
 #endif
 	if(debugStream_ != nullptr)
 	{
-		MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
-		debugStream_->println();
+		//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
 		debugStream_->print("MIFARE_Write() sector ");
 		debugStream_->print(flags_start_sector_);
 		debugStream_->print(" block ");
@@ -369,7 +367,7 @@ bool TrivialRFIDauthorisation::writeCardFlags_() {
 			}
 		}
 	}
-	MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
+	//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &key_, flags_start_sector_);
 	return(true);
 }
 
@@ -409,7 +407,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard() {
 #else
 bool TrivialRFIDauthorisation::authoriseCard() {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -434,7 +432,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t id)
 #else
 bool TrivialRFIDauthorisation::authoriseCard(const uint8_t id) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -456,7 +454,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t* id
 #else
 bool TrivialRFIDauthorisation::authoriseCard(const uint8_t* ids, const uint8_t numberOfIds) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -485,7 +483,7 @@ bool TrivialRFIDauthorisation::wipeCard() {
 	{
 		card_flags_[0] = 0;
 	}
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -502,7 +500,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::revokeCard(const uint8_t id) {
 #else
 bool TrivialRFIDauthorisation::revokeCard(const uint8_t id) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -524,7 +522,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::revokeCard(const uint8_t* ids, 
 #else
 bool TrivialRFIDauthorisation::revokeCard(const uint8_t* ids, const uint8_t numberOfIds) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -550,7 +548,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::checkCardAuthorisation(const ui
 #else
 bool TrivialRFIDauthorisation::checkCardAuthorisation(const uint8_t id) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
@@ -574,7 +572,7 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::checkCardAuthorisation(const ui
 #else
 bool TrivialRFIDauthorisation::checkCardAuthorisation(const uint8_t* ids, const uint8_t numberOfIds) {
 #endif
-	if(authenticateWithCard_() == false)
+	if(authenticateWithCard_(flags_start_block_) == false)
 	{
 		return(false);
 	}
