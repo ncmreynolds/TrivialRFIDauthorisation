@@ -14,52 +14,89 @@ TrivialRFIDauthorisation::~TrivialRFIDauthorisation()	//Destructor function
 }
 
 #if defined(ESP8266) || defined(ESP32)
-void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::begin(const uint8_t sector) {
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::begin(const uint8_t sector) {
 #else
-void TrivialRFIDauthorisation::begin(const uint8_t sector) {
+bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 #endif
+	bool initPass = false;
+	bool selfTestPass = false;
 	//Initialise RFID reader
-	rfid_reader_.PCD_Init();
-	if(debugStream_ != nullptr)
+	while(self_test_retries_ > 0 && (initPass == false || selfTestPass == false))
 	{
-		debugStream_->println(F("Initialising RFID reader"));
-		debugStream_->print(F("MFRC522 Self test: "));
-		if (rfid_reader_.PCD_PerformSelfTest() == true)	{
-			debugStream_->println(F("OK"));
+		if(initPass == false)
+		{
+			if(debugStream_ != nullptr)
+			{
+				debugStream_->print(F("Initialising RFID reader: "));
+			}
+			initPass = rfid_reader_.PCD_Init();
+			if(debugStream_ != nullptr)
+			{
+				if (initPass == true) {
+					debugStream_->println(F("OK"));
+				}
+				else	{
+					debugStream_->println(F("Fail"));
+				}
+			}
+			if(initPass == false)
+			{
+				rfid_reader_.PCD_Reset();
+			}
+
 		}
-		else	{
-			debugStream_->println(F("Fail"));
+		else
+		{
+			if(debugStream_ != nullptr)
+			{
+				debugStream_->print(F("RFID reader self test: "));
+			}
+			selfTestPass = rfid_reader_.PCD_PerformSelfTest();
+			if(debugStream_ != nullptr)
+			{
+				if (selfTestPass == true)	{
+					debugStream_->println(F("OK"));
+				}
+				else	{
+					debugStream_->println(F("Fail"));
+				}
+			}
+		}
+		self_test_retries_--;
+	}
+	if(selfTestPass == true)
+	{
+		for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
+			key_.keyByte[i] = 0xFF;
+		}
+		if(sector > 15)
+		{
+			flags_start_sector_ = 15;
+		}
+		else
+		{
+			flags_start_sector_ = sector;
+		}
+		if(flags_start_sector_ == 0)
+		{
+			flags_start_block_ = 1;
+		}
+		else
+		{
+			flags_start_block_ =  flags_start_sector_ * 4;
+		}
+		if(debugStream_ != nullptr)
+		{
+			debugStream_->print("Using sector:");
+			debugStream_->print(flags_start_sector_);
+			debugStream_->print(" block ");
+			debugStream_->print(flags_start_block_);
+			debugStream_->print('&');
+			debugStream_->print(flags_start_block_+1);
+			debugStream_->println(" to store authentication bitmask");
 		}
 	}
-	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-		key_.keyByte[i] = 0xFF;
-	}
-	if(sector > 15)
-	{
-		flags_start_sector_ = 15;
-	}
-	else
-	{
-		flags_start_sector_ = sector;
-	}
-	if(flags_start_sector_ == 0)
-	{
-		flags_start_block_ = 1;
-	}
-	else
-	{
-		flags_start_block_ =  flags_start_sector_ * 4;
-	}
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print("Using sector:");
-		debugStream_->print(flags_start_sector_);
-		debugStream_->print(" block ");
-		debugStream_->print(flags_start_block_);
-		debugStream_->print('&');
-		debugStream_->print(flags_start_block_+1);
-		debugStream_->println(" to store authentication bitmask");
-	}
+	return selfTestPass;
 }
 
 #if defined(ESP8266) || defined(ESP32)
@@ -69,12 +106,6 @@ void TrivialRFIDauthorisation::debug(Stream &debugStream)
 #endif
 {
 	debugStream_ = &debugStream;		//Set the stream used for the terminal
-	#if defined(ESP8266)
-	if(&debugStream == &Serial)
-	{
-		  debugStream_->write(17);		//Send an XON to stop the hung terminal after reset on ESP8266
-	}
-	#endif
 }
 
 #if defined(ESP8266) || defined(ESP32)
@@ -157,19 +188,17 @@ bool TrivialRFIDauthorisation::pollForCard() {
 		if(card_present_ == true && debugStream_ != nullptr)	{
 			if(card_changed_)	{
 				debugStream_->print(F("New card presented "));
-			} else {
-				debugStream_->print(F("Card present "));
-			}
-			debugStream_->print("UID:");
-			for(uint8_t i = 0; i < current_uid_size_; i++)
-			{
-				debugStream_->print(current_uid_[i], HEX);
-				if(i < current_uid_size_ - 1)
+				debugStream_->print("UID:");
+				for(uint8_t i = 0; i < current_uid_size_; i++)
 				{
-					debugStream_->print(':');
+					debugStream_->print(current_uid_[i], HEX);
+					if(i < current_uid_size_ - 1)
+					{
+						debugStream_->print(':');
+					}
 				}
+				debugStream_->println();
 			}
-			debugStream_->println();
 		}
 		return(true);
 	}

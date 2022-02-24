@@ -15,7 +15,7 @@ class TrivialRFIDauthorisation {
 	public:
 		TrivialRFIDauthorisation(uint8_t sspin);								//Constructor function
 		~TrivialRFIDauthorisation();											//Destructor function
-		void begin(uint8_t sector = 0);											//Start the RFID authentication on a specific sector
+		bool begin(uint8_t sector = 0);											//Start the RFID authentication on a specific sector
 		void debug(Stream &);													//Enable debug output on a stream
 		bool authoriseCard();													//Authorise this card for all IDs (For admins maybe?)
 		bool authoriseCard(uint8_t);											//Authorise this card for an ID
@@ -37,6 +37,7 @@ class TrivialRFIDauthorisation {
 		MFRC522DriverSPI rfid_driver_;
 		MFRC522 rfid_reader_;
 		MFRC522::MIFARE_Key key_;
+		uint8_t self_test_retries_ = 3;
 		bool rfid_antenna_enabled_ = true;										//Tracks state of the RFID antenna
 		uint8_t current_uid_[10];												//UID of last presented card
 		uint8_t current_uid_size_ = 4;											//UID size will be 4, 7 or 10
