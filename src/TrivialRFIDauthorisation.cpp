@@ -125,23 +125,27 @@ bool TrivialRFIDauthorisation::pollForCard() {
 			{
 				rfid_read_failures_ = rfid_read_failure_threshold_;
 				if(card_present_ == true) {
-					if(debugStream_ != nullptr)
+					/*if(debugStream_ != nullptr)
 					{
 						debugStream_->println(F("Card removed"));
-					}
+					}*/
 					for(uint8_t i = 0; i < current_uid_size_; i++) {
 						current_uid_[i] = 0;
 					}
 					current_uid_size_ = 0;
 					card_present_ = false;
 				}
+				/*if(debugStream_ != nullptr)
+				{
+					debugStream_->println(F("not present"));
+				}*/
 				return(false);
 			}
 			/*if(debugStream_ != nullptr)
 			{
-				debugStream_->println(F("not present"));
+				debugStream_->println(F("checking"));
 			}*/
-			return(false);
+			return(card_present_);
 		}
 		if(rfid_reader_.PICC_ReadCardSerial() == false) {
 			if(rfid_read_failures_++ >= rfid_read_failure_threshold_)
@@ -160,10 +164,10 @@ bool TrivialRFIDauthorisation::pollForCard() {
 				}
 				return(false);
 			}
-			/*if(debugStream_ != nullptr)
+			if(debugStream_ != nullptr)
 			{
 				debugStream_->println(F("can't read PICC"));
-			}*/
+			}
 			return(false);
 		}
 		/*if(debugStream_ != nullptr)
@@ -202,7 +206,7 @@ bool TrivialRFIDauthorisation::pollForCard() {
 		}
 		return(true);
 	}
-	return(false);
+	return(card_present_);
 }
 
 #if defined(ESP8266) || defined(ESP32)
@@ -620,13 +624,30 @@ bool TrivialRFIDauthorisation::checkCardAuthorisation(const uint8_t* ids, const 
 	return(false);
 }
 
-#if defined(ESP8266) || defined(ESP32)
 uint8_t* ICACHE_FLASH_ATTR TrivialRFIDauthorisation::cardUID() {
+#if defined(ESP8266) || defined(ESP32)
 #else
 uint8_t* TrivialRFIDauthorisation::cardUID() {
 #endif
 	return(current_uid_);
 }
+
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::cardUID(uint32_t &uid) {
+#if defined(ESP8266) || defined(ESP32)
+#else
+bool TrivialRFIDauthorisation::cardUID(uint32_t &uid) {
+#endif
+	if(current_uid_size_ == 4) {
+		uid = current_uid_[0]<<24;
+		uid += current_uid_[1]<<16;
+		uid += current_uid_[2]<<8;
+		uid += current_uid_[3];
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 #if defined(ESP8266) || defined(ESP32)
 uint8_t ICACHE_FLASH_ATTR TrivialRFIDauthorisation::cardUIDsize() {

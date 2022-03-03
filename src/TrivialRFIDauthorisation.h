@@ -29,6 +29,7 @@ class TrivialRFIDauthorisation {
 		bool cardPresent();														//Is a card just present?
 		bool cardChanged();														//Has it changed?
 		uint8_t* cardUID();														//Retrieve a pointer to the current UID
+		bool cardUID(uint32_t &uid);											//Retrieve the current UID into an uint32_t, if possible
 		uint8_t cardUIDsize();													//Size of the current UID
 	protected:
 	private:
@@ -46,7 +47,7 @@ class TrivialRFIDauthorisation {
 		uint8_t rfid_read_failures_ = 0;										//Count up before considering a card removed
 		uint8_t rfid_read_failure_threshold_ = 2;								//Threshold to hit for card removal
 		uint32_t rfid_reader_last_polled_ = 0;									//Timer for regular polling of RFID
-		uint32_t rfid_reader_polling_interval_ = 100;							//Timer for regular polling of RFID
+		uint32_t rfid_reader_polling_interval_ = 250;							//Timer for regular polling of RFID
 		uint8_t card_flags_[32];												//Take a copy of the flags on the card
 		uint8_t flags_start_block_ = 4;											//Block to start flags from
 		uint8_t flags_start_sector_ = 1;										//Sector to start flags from
