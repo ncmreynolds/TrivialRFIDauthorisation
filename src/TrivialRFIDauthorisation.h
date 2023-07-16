@@ -15,31 +15,40 @@ class TrivialRFIDauthorisation {
 	public:
 		TrivialRFIDauthorisation(uint8_t sspin);								//Constructor function
 		~TrivialRFIDauthorisation();											//Destructor function
-		bool begin(uint8_t sector = 0);											//Start the RFID authentication on a specific sector
+		bool begin(uint8_t sector = 1);											//Start the RFID authentication on a specific sector
 		void debug(Stream &);													//Enable debug output on a stream
 		bool authoriseCard();													//Authorise this card for all IDs (For admins maybe?)
 		bool authoriseCard(uint8_t);											//Authorise this card for an ID
 		bool authoriseCard(const uint8_t*, uint8_t);							//Authorise this card for multiple IDs
-		bool revokeCard();														//Revoke all authorisations of this card
-		bool revokeCard(uint8_t);												//Revoke authorisation of this card for an ID
-		bool revokeCard(const uint8_t*, uint8_t);								//Revoke authorisation of this card for multiple IDs
+		bool revokeCardAuthorisation();											//Revoke all authorisations of this card
+		bool revokeCardAuthorisation(uint8_t);									//Revoke authorisation of this card for an ID
+		bool revokeCardAuthorisation(const uint8_t*, uint8_t);					//Revoke authorisation of this card for multiple IDs
 		bool checkCardAuthorisation(uint8_t);									//Is this card authorised for this ID?
 		bool checkCardAuthorisation(const uint8_t*, uint8_t);					//Is this card authorised for any of these IDs?
 		bool pollForCard();														//Poll to check if a card is there
-		bool cardPresent();														//Is a card just present?
-		bool cardChanged();														//Has it changed?
+		bool cardPresent();														//Has a card just been presented?
+		bool cardChanged();														//Has it changed since the last card?
 		uint8_t* cardUID();														//Retrieve a pointer to the current UID
 		bool cardUID(uint32_t &uid);											//Retrieve the current UID into an uint32_t, if possible
 		uint8_t cardUIDsize();													//Size of the current UID
+		uint8_t cardKeySize();													//Size of the current card key
+		void setDefaultCardKeyA();												//Set the default card key for reading
+		void setDefaultCardKeyB();												//Set the default card key for writing
+		void setCustomCardKeyA(uint8_t *key);									//Set a custom card key for reading. Note this doesn't change the existing key A of a card.
+		void setCustomCardKeyB(uint8_t *key);									//Set a custom card key for writing. Note this doesn't change the existing key B of a card.
 	protected:
 	private:
 		Stream *debugStream_ = nullptr;											//The stream used for debugging
 		MFRC522DriverPinSimple rfid_ss_pin_;
 		MFRC522DriverSPI rfid_driver_;
 		MFRC522 rfid_reader_;
-		MFRC522::MIFARE_Key key_;
-		uint8_t self_test_retries_ = 3;
+		MFRC522::MIFARE_Key keyA_;
+		MFRC522::MIFARE_Key keyB_;
+		bool keyAset_ = false;													//true if KeyA set
+		bool keyBset_ = false;													//true if KeyA set
+		uint8_t self_test_retries_ = 3;											//Sometimes the self test fails on the first try
 		bool rfid_antenna_enabled_ = true;										//Tracks state of the RFID antenna
+		bool card_awake_ = false;												//Tracks awake state of the card, which will go idle/halt after transactions
 		uint8_t current_uid_[10];												//UID of last presented card
 		uint8_t current_uid_size_ = 4;											//UID size will be 4, 7 or 10
 		bool card_present_ = false;												//Is card present
@@ -47,12 +56,18 @@ class TrivialRFIDauthorisation {
 		uint8_t rfid_read_failures_ = 0;										//Count up before considering a card removed
 		uint8_t rfid_read_failure_threshold_ = 2;								//Threshold to hit for card removal
 		uint32_t rfid_reader_last_polled_ = 0;									//Timer for regular polling of RFID
-		uint32_t rfid_reader_polling_interval_ = 250;							//Timer for regular polling of RFID
+		uint32_t rfid_reader_polling_interval_ = 1000;							//Timer for regular polling of RFID
 		uint8_t card_flags_[32];												//Take a copy of the flags on the card
 		uint8_t flags_start_block_ = 4;											//Block to start flags from
 		uint8_t flags_start_sector_ = 1;										//Sector to start flags from
-		uint8_t trailerBlock_  = 7;
-		bool authenticateWithCard_(uint8_t block);										//Authenticate with Key_A
+		bool flagsRead_ = false;												//Cache flags once read, the library maintains a copy
+		uint8_t trailerBlock_  = 7;												//Trailer block
+		//bool PICC_IsCardPresent();												//Similar to PICC_IsNewCardPresent from the library but covers existing cards
+		bool wakeCard_();														//Wake teh card when idle/halted
+		bool authenticateWithCardForRead_(uint8_t block);						//Authenticate with keyA_
+		bool authenticatedWithCardForRead_ = false;								//Track auth state
+		bool authenticateWithCardForWrite_(uint8_t block);						//Authenticate with keyB_
+		bool authenticatedWithCardForWrite_ = false;								//Track auth state
 		void deAuthenticateWithCard_();											//Deauthenticate after a transaction is done
 		bool readCardFlags_();													//Read the flags from a card
 		bool writeCardFlags_();													//Write the flags to a card

@@ -3,7 +3,7 @@
  * 
  * https://github.com/ncmreynolds/TrivialRFIDauthorisation
  * 
- * This example will authorise the card for ALL IDs when presented to the reader
+ * This example will show all the authorised IDs when presented to the reader
  * 
  * 
  */
@@ -21,9 +21,9 @@ void setup() {
   Serial.begin(115200);
   //rfid.debug(Serial); //Enables debugging. Doing this before 'begin' means you can see the reader initialisation information!
   if(rfid.begin()) { //Start the RFID reader
-    Serial.println("*******************************");
-    Serial.println("Starting authorisation of cards for ALL IDs");
-    Serial.println("*******************************");
+    Serial.println(F("*******************************"));
+    Serial.println(F("Showing authorised IDs for cards"));
+    Serial.println(F("*******************************"));
   }
   else
   {
@@ -38,17 +38,33 @@ void loop() {
   rfid.pollForCard(); //Must run regularly to read and process the card
   if(rfid.cardPresent() == true && rfid.cardChanged() == true)
   {
-    bool result = rfid.authoriseCard();
-    Serial.println("*******************************");
-    Serial.print("Authorising card for all IDs - ");
-    if(result == true)
+    Serial.println(F("********************************"));
+    Serial.print(F("Authorised IDs:"));
+    bool first = true;
+    for(uint16_t id = 0; id <= 255; id++)
     {
-      Serial.println("success");
+      bool result = rfid.checkCardAuthorisation((uint8_t)id);
+      if(result == true)
+      {
+        if(first == false)
+        {
+          Serial.print('/');
+        }
+        else
+        {
+          first = false;
+        }
+        Serial.print(id);
+      }
+    }
+    if(first == true)
+    {
+      Serial.println(F("none"));
     }
     else
     {
-      Serial.println("failure");
+      Serial.println();
     }
-    Serial.println("*******************************");
+    Serial.println(F("********************************"));
   }
 }

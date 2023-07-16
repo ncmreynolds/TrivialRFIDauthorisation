@@ -4,10 +4,12 @@ TrivialRFIDauthorisation	KEYWORD1
 begin	KEYWORD2
 debug	KEYWORD2
 authoriseCard	KEYWORD2
-revokeCard	KEYWORD2
+revokeCardAuthorisation	KEYWORD2
 pollForCard	KEYWORD2
 cardPresent	KEYWORD2
 cardChanged	KEYWORD2
 checkCardAuthorisation	KEYWORD2
 cardUID	KEYWORD2
 cardUIDsize	KEYWORD2
+setDefaultCardKeyA	KEYWORD2
+setCustomCardKeyA	KEYWORD2
