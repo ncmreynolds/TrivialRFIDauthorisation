@@ -14,3 +14,5 @@ This library was created as part of the [LARP hackable RFID lock](https://github
 If you use sector 0 the library will use block 1&2, the only usable blocks in sector 0.
 
 If you use sector 1 or higher the library will use the first two blocks in that sector, potentially leaving the third block free for other data.
+
+By default the library uses sector 1, in early versions it used sector 0.
