@@ -25,11 +25,13 @@ bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 	{
 		if(initPass == false)
 		{
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				debugStream_->print(F("Initialising RFID reader: "));
 			}
+			#endif
 			initPass = rfid_reader_.PCD_Init();
+			#ifdef TrivialRFIDauthorisationSupportDebugging
 			if(debugStream_ != nullptr)
 			{
 				if (initPass == true) {
@@ -39,6 +41,7 @@ bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 					debugStream_->println(F("Fail"));
 				}
 			}
+			#endif
 			if(initPass == false)
 			{
 				rfid_reader_.PCD_Reset();
@@ -47,13 +50,14 @@ bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 		}
 		else
 		{
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				debugStream_->print(F("RFID reader self test: "));
 			}
+			#endif
 			selfTestPass = rfid_reader_.PCD_PerformSelfTest();
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				if (selfTestPass == true)	{
 					debugStream_->println(F("OK"));
 				}
@@ -61,16 +65,21 @@ bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 					debugStream_->println(F("Fail"));
 				}
 			}
+			#endif
 		}
 		self_test_retries_--;
 	}
 	if(selfTestPass == true)
 	{
+		#ifdef TrivialRFIDauthorisationSupportEncryption
 		if(keyAset_ == false)
+		#endif
 		{
 			setDefaultCardKeyA();
 		}
+		#ifdef TrivialRFIDauthorisationSupportEncryption
 		if(keyBset_ == false)
+		#endif
 		{
 			setDefaultCardKeyB();
 		}
@@ -90,20 +99,23 @@ bool TrivialRFIDauthorisation::begin(const uint8_t sector) {
 		{
 			flags_start_block_ =  flags_start_sector_ * 4;
 		}
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr)
 		{
-			debugStream_->print("Using sector:");
+			debugStream_->print(F("Using sector:"));
 			debugStream_->print(flags_start_sector_);
-			debugStream_->print(" block ");
+			debugStream_->print(F(" block "));
 			debugStream_->print(flags_start_block_);
 			debugStream_->print('&');
 			debugStream_->print(flags_start_block_+1);
-			debugStream_->println(" to store authentication bitmask");
+			debugStream_->println(F(" to store authentication bitmask"));
 		}
+		#endif
 	}
 	return selfTestPass;
 }
 
+#ifdef TrivialRFIDauthorisationSupportDebugging
 #if defined(ESP8266) || defined(ESP32)
 void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::debug(Stream &debugStream)
 #else
@@ -112,6 +124,7 @@ void TrivialRFIDauthorisation::debug(Stream &debugStream)
 {
 	debugStream_ = &debugStream;		//Set the stream used for the terminal
 }
+#endif
 
 #if defined(ESP8266) || defined(ESP32)
 bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::pollForCard() {
@@ -121,10 +134,6 @@ bool TrivialRFIDauthorisation::pollForCard() {
 	if(millis() - rfid_reader_last_polled_ > rfid_reader_polling_interval_)
 	{
 		rfid_reader_last_polled_ = millis();
-		/*if(debugStream_ != nullptr)
-		{
-			debugStream_->print(F("Polling card:"));
-		}*/
 		/*
 		if(PICC_IsCardPresent() == false) {
 		//if(rfid_reader_.PICC_IsNewCardPresent() == false) {
@@ -161,9 +170,11 @@ bool TrivialRFIDauthorisation::pollForCard() {
 			{
 				rfid_read_failures_ = rfid_read_failure_threshold_;
 				if(card_present_ == true) {
+					#ifdef TrivialRFIDauthorisationSupportDebugging
 					if(debugStream_ != nullptr) {
 						debugStream_->println(F("Card removal detected due to read failures"));
 					}
+					#endif
 					for(uint8_t i = 0; i < current_uid_size_; i++) {
 						current_uid_[i] = 0;
 					}
@@ -172,10 +183,12 @@ bool TrivialRFIDauthorisation::pollForCard() {
 					flagsRead_ = false;
 				}
 				return false;
+			#ifdef TrivialRFIDauthorisationSupportDebugging
 			} else {
 				if(debugStream_ != nullptr) {
 					debugStream_->println(F("Card read failure"));
 				}
+			#endif
 			}
 			return false;
 		}
@@ -199,13 +212,14 @@ bool TrivialRFIDauthorisation::pollForCard() {
 					card_changed_ = true;
 				}
 			}
+			#ifdef TrivialRFIDauthorisationSupportDebugging
 			if(card_present_ == true && debugStream_ != nullptr) {
 				if(card_changed_ == true)	{
 					debugStream_->print(F("New"));
 				} else {
 					debugStream_->print(F("Previous"));
 				}
-				debugStream_->print(" card presented, UID:");
+				debugStream_->print(F(" card presented, UID:"));
 				for(uint8_t i = 0; i < current_uid_size_; i++)
 				{
 					debugStream_->print(current_uid_[i], HEX);
@@ -216,6 +230,7 @@ bool TrivialRFIDauthorisation::pollForCard() {
 				}
 				debugStream_->println();
 			}
+			#endif
 			return true;
 		}
 	}
@@ -245,21 +260,27 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::wakeCard_() {
 #else
 bool TrivialRFIDauthorisation::wakeCard_() {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		debugStream_->print(F("Waking card: "));
 	}
+	#endif
 	byte bufferATQA[2];
 	byte bufferSize = sizeof(bufferATQA);
 	MFRC522::StatusCode result = rfid_reader_.PICC_WakeupA(bufferATQA, &bufferSize);
 	if(result == MFRC522Constants::StatusCode::STATUS_OK) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("success"));
 		}
+		#endif
 		return true;
 	} else {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("failure"));
 		}
+		#endif
 	}
 	return false;
 }
@@ -272,27 +293,32 @@ bool TrivialRFIDauthorisation::authenticateWithCardForRead_(uint8_t block) {
 		wakeCard_();
 	}
 	if(authenticatedWithCardForRead_ == false) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->print(F("Authenticating PICC for read using key A:"));
 		}
+		#endif
 		MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.PCD_Authenticate(MFRC522Constants::PICC_Command::PICC_CMD_MF_AUTH_KEY_A, block, &keyA_, &(rfid_reader_.uid));
 		if (status != MFRC522::StatusCode::STATUS_OK) {
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				debugStream_->print(F("PCD_Authenticate() failed: "));
 				debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
 			}
+			#endif
 			return false;
-		}
-		else if(debugStream_ != nullptr)
-		{
+		#ifdef TrivialRFIDauthorisationSupportDebugging
+		} else if(debugStream_ != nullptr) {
 			debugStream_->println(F("success"));
+		#endif
 		}
 		authenticatedWithCardForRead_ = true;
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	} else {
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("Already authenticated for read using key A"));
 		}
+	#endif
 	}
 	return true;
 }
@@ -306,27 +332,32 @@ bool TrivialRFIDauthorisation::authenticateWithCardForWrite_(uint8_t block) {
 		wakeCard_();
 	}
 	if(authenticatedWithCardForWrite_ == false) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->print(F("Authenticating PICC for write using key B:"));
 		}
+		#endif
 		MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.PCD_Authenticate(MFRC522Constants::PICC_Command::PICC_CMD_MF_AUTH_KEY_A, block, &keyB_, &(rfid_reader_.uid));
 		if (status != MFRC522::StatusCode::STATUS_OK) {
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				debugStream_->print(F("PCD_Authenticate() failed: "));
 				debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
 			}
+			#endif
 			return false;
-		}
-		else if(debugStream_ != nullptr)
-		{
+		#ifdef TrivialRFIDauthorisationSupportDebugging
+		} else if(debugStream_ != nullptr) {
 			debugStream_->println(F("success"));
+		#endif
 		}
 		authenticatedWithCardForWrite_ = true;
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	} else {
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("Already authenticated for write using key B"));
 		}
+	#endif
 	}
 	return true;
 }
@@ -339,33 +370,125 @@ bool TrivialRFIDauthorisation::readCardFlags_() {
 	uint8_t buffer[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //Needs two bytes for the CRC
 	uint8_t size = sizeof(buffer);
 	for(uint8_t blockOffset = 0; blockOffset <= 1; blockOffset++) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
-			debugStream_->print("MIFARE_Read() sector ");
+			debugStream_->print(F("MIFARE_Read() sector "));
 			debugStream_->print(flags_start_sector_);
-			debugStream_->print(" block ");
+			debugStream_->print(F(" block "));
 			debugStream_->print(flags_start_block_ + blockOffset);
 			debugStream_->print(' ');
 		}
+		#endif
 		MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Read(flags_start_block_ + blockOffset, buffer, &size);
 		if (status != MFRC522::StatusCode::STATUS_OK) {
-			if(debugStream_ != nullptr)
-			{
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
 				debugStream_->print(F("failed: "));
 				debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
 			}
+			#endif
 			rfid_reader_.PICC_HaltA();
 			rfid_reader_.PCD_StopCrypto1();
 			return false;
 		}
-		if(debugStream_ != nullptr)
-		{
+		#ifdef TrivialRFIDauthorisationSupportDebugging
+		if(debugStream_ != nullptr) {
 			debugStream_->print(F("success: "));
 		}
+		#endif
 		for (uint8_t i = 0; i < 16; i++) {
 			card_flags_[i + (16 * blockOffset)] = buffer[i];
+			#ifdef TrivialRFIDauthorisationSupportDebugging
+			if(debugStream_ != nullptr) {
+				debugStream_->print(buffer[i], HEX);
+				if(i<15)
+				{
+					debugStream_->print(':');
+				}
+				else
+				{
+					debugStream_->println();
+				}
+			}
+			#endif
+		}
+	}
+	flagsRead_ = true;
+	return true;
+}
+
+#if defined(ESP8266) || defined(ESP32)
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::writeCardFlags_() {
+#else
+bool TrivialRFIDauthorisation::writeCardFlags_() {
+#endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &keyA_, flags_start_sector_);
+		debugStream_->print(F("MIFARE_Write() sector "));
+		debugStream_->print(flags_start_sector_);
+		debugStream_->print(F(" block "));
+		debugStream_->print(flags_start_block_);
+		debugStream_->print(F(" start: "));
+	}
+	#endif
+	MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Write(flags_start_block_, &card_flags_[0], 16);
+	if (status != MFRC522::StatusCode::STATUS_OK) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
+		if(debugStream_ != nullptr) {
+			debugStream_->print(F("failed: "));
+			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
+		}
+		#endif
+		rfid_reader_.PICC_HaltA();
+		rfid_reader_.PCD_StopCrypto1();
+		return false;
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("success: "));
+		for (uint8_t i = 0; i < 16; i++) {
+			if(debugStream_ != nullptr) {
+				debugStream_->print(card_flags_[i], HEX);
+				if(i<15)
+				{
+					debugStream_->print(':');
+				}
+				else
+				{
+					debugStream_->println();
+				}
+			}
+			
+		}
+		debugStream_->print(F("MIFARE_Write() sector "));
+		debugStream_->print(flags_start_sector_);
+		debugStream_->print(F(" block "));
+		debugStream_->print(flags_start_block_+1);
+		debugStream_->print(F(" start: "));
+	}
+	#endif
+	status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Write(flags_start_block_+1, &card_flags_[16], 16);
+	if (status != MFRC522::StatusCode::STATUS_OK) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
+		if(debugStream_ != nullptr)
+		{
+			debugStream_->print(F("failed: "));
+			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
+		}
+		#endif
+		rfid_reader_.PICC_HaltA();
+		rfid_reader_.PCD_StopCrypto1();
+		return false;
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr)
+	{
+		debugStream_->print(F("success: "));
+		for (uint8_t i = 0; i < 16; i++) {
 			if(debugStream_ != nullptr)
 			{
-				debugStream_->print(buffer[i], HEX);
+				debugStream_->print(card_flags_[i + 16], HEX);
 				if(i<15)
 				{
 					debugStream_->print(':');
@@ -377,130 +500,7 @@ bool TrivialRFIDauthorisation::readCardFlags_() {
 			}
 		}
 	}
-	/*
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print("MIFARE_Read() sector ");
-		debugStream_->print(flags_start_sector_);
-		debugStream_->print(" block ");
-		debugStream_->print(flags_start_block_+1);
-		debugStream_->print(" start: ");
-	}
-	status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Read(flags_start_block_+1, buffer, &size);
-	if (status != MFRC522::StatusCode::STATUS_OK) {
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(F("failed: "));
-			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
-		}
-		rfid_reader_.PICC_HaltA();
-		rfid_reader_.PCD_StopCrypto1();
-		return false;
-	}
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print(F("success: "));
-	}
-	for (uint8_t i = 0; i < 16; i++) {
-		card_flags_[i + 16] = buffer[i];
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(buffer[i], HEX);
-			if(i<15)
-			{
-				debugStream_->print(':');
-			}
-			else
-			{
-				debugStream_->println();
-			}
-		}
-	}
-	*/
-	flagsRead_ = true;
-	return true;
-}
-
-#if defined(ESP8266) || defined(ESP32)
-bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::writeCardFlags_() {
-#else
-bool TrivialRFIDauthorisation::writeCardFlags_() {
-#endif
-	if(debugStream_ != nullptr)
-	{
-		//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &keyA_, flags_start_sector_);
-		debugStream_->print("MIFARE_Write() sector ");
-		debugStream_->print(flags_start_sector_);
-		debugStream_->print(" block ");
-		debugStream_->print(flags_start_block_);
-		debugStream_->print(" start: ");
-	}
-	MFRC522::StatusCode status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Write(flags_start_block_, &card_flags_[0], 16);
-	if (status != MFRC522::StatusCode::STATUS_OK) {
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(F("failed: "));
-			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
-		}
-		rfid_reader_.PICC_HaltA();
-		rfid_reader_.PCD_StopCrypto1();
-		return false;
-	}
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print(F("success: "));
-	}
-	for (uint8_t i = 0; i < 16; i++) {
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(card_flags_[i], HEX);
-			if(i<15)
-			{
-				debugStream_->print(':');
-			}
-			else
-			{
-				debugStream_->println();
-			}
-		}
-	}
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print("MIFARE_Write() sector ");
-		debugStream_->print(flags_start_sector_);
-		debugStream_->print(" block ");
-		debugStream_->print(flags_start_block_+1);
-		debugStream_->print(" start: ");
-	}
-	status = (MFRC522::StatusCode) rfid_reader_.MIFARE_Write(flags_start_block_+1, &card_flags_[16], 16);
-	if (status != MFRC522::StatusCode::STATUS_OK) {
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(F("failed: "));
-			debugStream_->println(MFRC522Debug::GetStatusCodeName(status));
-		}
-		rfid_reader_.PICC_HaltA();
-		rfid_reader_.PCD_StopCrypto1();
-		return false;
-	}
-	if(debugStream_ != nullptr)
-	{
-		debugStream_->print(F("success: "));
-	}
-	for (uint8_t i = 0; i < 16; i++) {
-		if(debugStream_ != nullptr)
-		{
-			debugStream_->print(card_flags_[i + 16], HEX);
-			if(i<15)
-			{
-				debugStream_->print(':');
-			}
-			else
-			{
-				debugStream_->println();
-			}
-		}
-	}
+	#endif
 	//MFRC522Debug::PICC_DumpMifareClassicSectorToSerial(rfid_reader_, Serial, &(rfid_reader_.uid), &keyA_, flags_start_sector_);
 	return true;
 }
@@ -511,24 +511,30 @@ void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::deAuthenticateWithCard_() {
 void TrivialRFIDauthorisation::deAuthenticateWithCard_() {
 #endif
 	if(authenticatedWithCardForRead_ == true) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("De-authenticating PICC for read with key A"));
 		}
+		#endif
 		rfid_reader_.PICC_HaltA();
 		rfid_reader_.PCD_StopCrypto1();
 		authenticatedWithCardForRead_ = false;
 	}
 	else if(authenticatedWithCardForWrite_ == true) {
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("De-authenticating PICC for write with key B"));
 		}
+		#endif
 		rfid_reader_.PICC_HaltA();
 		rfid_reader_.PCD_StopCrypto1();
 		authenticatedWithCardForWrite_ = false;
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	} else {
 		if(debugStream_ != nullptr) {
 			debugStream_->println(F("Already de-authenticated"));
 		}
+	#endif
 	}
 	card_awake_ = false;
 }
@@ -637,9 +643,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::revokeCardAuthorisation() {
 #else
 bool TrivialRFIDauthorisation::revokeCardAuthorisation() {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		//debugStream_->println(F("complete revokeCardAuthorisation"));
 	}
+	#endif
 	for(uint8_t i = 0; i < 32 ; i++)
 	{
 		card_flags_[0] = 0;
@@ -661,9 +669,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::revokeCardAuthorisation(const u
 #else
 bool TrivialRFIDauthorisation::revokeCardAuthorisation(const uint8_t id) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		//debugStream_->println(F("single revokeCardAuthorisation"));
 	}
+	#endif
 	if(flagsRead_ == false) {
 		if(authenticateWithCardForRead_(flags_start_block_) == false)
 		{
@@ -692,9 +702,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::revokeCardAuthorisation(const u
 #else
 bool TrivialRFIDauthorisation::revokeCardAuthorisation(const uint8_t* ids, const uint8_t numberOfIds) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		//debugStream_->println(F("multi revokeCardAuthorisation"));
 	}
+	#endif
 	if(flagsRead_ == false) {
 		if(authenticateWithCardForRead_(flags_start_block_) == false)
 		{
@@ -727,9 +739,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::checkCardAuthorisation(const ui
 #else
 bool TrivialRFIDauthorisation::checkCardAuthorisation(const uint8_t id) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		//debugStream_->println(F("single checkCardAuthorisation"));
 	}
+	#endif
 	if(flagsRead_ == false) {
 		if(authenticateWithCardForRead_(flags_start_block_) == false)
 		{
@@ -756,9 +770,11 @@ bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::checkCardAuthorisation(const ui
 #else
 bool TrivialRFIDauthorisation::checkCardAuthorisation(const uint8_t* ids, const uint8_t numberOfIds) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
 	if(debugStream_ != nullptr) {
 		debugStream_->println(F("multi checkCardAuthorisation"));
 	}
+	#endif
 	if(flagsRead_ == false) {
 		if(authenticateWithCardForRead_(flags_start_block_) == false)
 		{
@@ -826,19 +842,27 @@ void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::setDefaultCardKeyA() {
 #else
 void TrivialRFIDauthorisation::setDefaultCardKeyA() {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("Setting default card key A:"));
+	}
+	#endif
+	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
+		keyA_.keyByte[i] = 0xFF;
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
-			debugStream_->print(F("Setting default card key A:"));
+			debugStream_->print(F(" 0xFF"));
 		}
-		for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-			keyA_.keyByte[i] = 0xFF;
-			if(debugStream_ != nullptr) {
-				debugStream_->print(F(" 0xFF"));
-			}
-		}
-		if(debugStream_ != nullptr) {
-			debugStream_->print(F("\r\n"));
-		}
-		keyAset_ = true;
+		#endif
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("\r\n"));
+	}
+	#endif
+	#ifdef TrivialRFIDauthorisationSupportEncryption
+	keyAset_ = true;
+	#endif
 }
 
 #if defined(ESP8266) || defined(ESP32)
@@ -846,40 +870,56 @@ void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::setDefaultCardKeyB() {
 #else
 void TrivialRFIDauthorisation::setDefaultCardKeyB() {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("Setting default card key B:"));
+	}
+	#endif
+	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
+		keyB_.keyByte[i] = 0xFF;
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
-			debugStream_->print(F("Setting default card key B:"));
+			debugStream_->print(F(" 0xFF"));
 		}
-		for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-			keyB_.keyByte[i] = 0xFF;
-			if(debugStream_ != nullptr) {
-				debugStream_->print(F(" 0xFF"));
-			}
-		}
-		if(debugStream_ != nullptr) {
-			debugStream_->print(F("\r\n"));
-		}
-		keyBset_ = true;
+		#endif
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("\r\n"));
+	}
+	#endif
+	#ifdef TrivialRFIDauthorisationSupportEncryption
+	keyBset_ = true;
+	#endif
 }
-
+#ifdef TrivialRFIDauthorisationSupportEncryption
 #if defined(ESP8266) || defined(ESP32)
 void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::setCustomCardKeyA(uint8_t *key) {
 #else
 void TrivialRFIDauthorisation::setCustomCardKeyA(uint8_t *key) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("Setting custom card key A:"));
+	}
+	#endif
+	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
+		keyA_.keyByte[i] = key[i];
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
-			debugStream_->print(F("Setting custom card key A:"));
+			debugStream_->print(' ');
+			debugStream_->print(key[i], HEX);
 		}
-		for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-			keyA_.keyByte[i] = key[i];
-			if(debugStream_ != nullptr) {
-				debugStream_->print(' ');
-				debugStream_->print(key[i], HEX);
-			}
-		}
-		if(debugStream_ != nullptr) {
-			debugStream_->print(F("\r\n"));
-		}
-		keyAset_ = true;
+		#endif
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("\r\n"));
+	}
+	#endif
+	#ifdef TrivialRFIDauthorisationSupportEncryption
+	keyAset_ = true;
+	#endif
 }
 
 #if defined(ESP8266) || defined(ESP32)
@@ -887,20 +927,28 @@ void ICACHE_FLASH_ATTR TrivialRFIDauthorisation::setCustomCardKeyB(uint8_t *key)
 #else
 void TrivialRFIDauthorisation::setCustomCardKeyB(uint8_t *key) {
 #endif
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("Setting custom card key B:"));
+	}
+	#endif
+	for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
+		keyB_.keyByte[i] = key[i];
+		#ifdef TrivialRFIDauthorisationSupportDebugging
 		if(debugStream_ != nullptr) {
-			debugStream_->print(F("Setting custom card key B:"));
+			debugStream_->print(' ');
+			debugStream_->print(key[i], HEX);
 		}
-		for (uint8_t i = 0; i < MFRC522::MIFARE_Misc::MF_KEY_SIZE; i++) {
-			keyB_.keyByte[i] = key[i];
-			if(debugStream_ != nullptr) {
-				debugStream_->print(' ');
-				debugStream_->print(key[i], HEX);
-			}
-		}
-		if(debugStream_ != nullptr) {
-			debugStream_->print(F("\r\n"));
-		}
-		keyAset_ = true;
+		#endif
+	}
+	#ifdef TrivialRFIDauthorisationSupportDebugging
+	if(debugStream_ != nullptr) {
+		debugStream_->print(F("\r\n"));
+	}
+	#endif
+	#ifdef TrivialRFIDauthorisationSupportEncryption
+	keyAset_ = true;
+	#endif
 }
-
+#endif
 #endif
