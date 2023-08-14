@@ -52,7 +52,8 @@ void loop() {
   rfid.pollForCard(); //Must run regularly to read and process the card
   if(rfid.cardPresent() == true && rfid.cardChanged() == true)
   {
-    bool result = rfid.authoriseCard(idsToAuthorise,sizeof(idsToAuthorise));
+    bool result = rfid.authoriseCard(idsToAuthorise,sizeof(idsToAuthorise));  //Authorises the IDs in idsToAuthorise, in addition to any existing ones
+    //bool result = rfid.authoriseCard(idsToAuthorise,sizeof(idsToAuthorise), false); //Use this with 'false' as the last parameter to authorise the IDs in idsToAuthorise, revoking all others
     Serial.println(F("*******************************"));
     Serial.print(F("Authorising card for IDs:"));
     for(uint8_t i = 0; i < sizeof(idsToAuthorise); i++)
