@@ -2,6 +2,8 @@
 
 
 
+- 0.1.4 Add to API to allow clearing of existing authorised while setting new ones in one action
+  
 - 0.1.3 Make sure all debugging strings are stored in flash
   
 - 0.1.2 Change default sector on the card to 1 from 0. **This is a breaking change for any previously written cards** but can be fixed by setting the sector to 0 with begin(0) instead of begin().

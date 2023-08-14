@@ -588,18 +588,30 @@ bool TrivialRFIDauthorisation::authoriseCard() {
 }
 
 #if defined(ESP8266) || defined(ESP32)
-bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t id) {
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t id, bool append = true) {
 #else
-bool TrivialRFIDauthorisation::authoriseCard(const uint8_t id) {
+bool TrivialRFIDauthorisation::authoriseCard(const uint8_t id, bool append = true) {
 #endif
-	if(flagsRead_ == false) {
-		if(authenticateWithCardForRead_(flags_start_block_) == false)
-		{
-			return false;
+	if(append == true) {	//Read the existing flags
+		if(flagsRead_ == false) {
+			if(authenticateWithCardForRead_(flags_start_block_) == false)
+			{
+				return false;
+			}
+			if(readCardFlags_() == false)
+			{
+				return false;
+			}
 		}
-		if(readCardFlags_() == false)
-		{
-			return false;
+	} else {	//Wipe all the flags
+		if(flagsRead_ == false) {
+			if(authenticateWithCardForRead_(flags_start_block_) == false)
+			{
+				return false;
+			}
+		}
+		for(uint8_t index = 0 ; index < 32; index++) {
+			card_flags_[index] = 0;
 		}
 	}
 	card_flags_[id>>3] = card_flags_[id>>3] | 0x01<<(id%8);	//Set the specific bit
@@ -612,18 +624,30 @@ bool TrivialRFIDauthorisation::authoriseCard(const uint8_t id) {
 }
 
 #if defined(ESP8266) || defined(ESP32)
-bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t* ids, const uint8_t numberOfIds) {
+bool ICACHE_FLASH_ATTR TrivialRFIDauthorisation::authoriseCard(const uint8_t* ids, const uint8_t numberOfIds, bool append = true) {
 #else
-bool TrivialRFIDauthorisation::authoriseCard(const uint8_t* ids, const uint8_t numberOfIds) {
+bool TrivialRFIDauthorisation::authoriseCard(const uint8_t* ids, const uint8_t numberOfIds, bool append = true) {
 #endif
-	if(flagsRead_ == false) {
-		if(authenticateWithCardForRead_(flags_start_block_) == false)
-		{
-			return false;
+	if(append == true) {	//Read the existing flags
+		if(flagsRead_ == false) {
+			if(authenticateWithCardForRead_(flags_start_block_) == false)
+			{
+				return false;
+			}
+			if(readCardFlags_() == false)
+			{
+				return false;
+			}
 		}
-		if(readCardFlags_() == false)
-		{
-			return false;
+	} else {	//Wipe all the flags
+		if(flagsRead_ == false) {
+			if(authenticateWithCardForRead_(flags_start_block_) == false)
+			{
+				return false;
+			}
+		}
+		for(uint8_t index = 0 ; index < 32; index++) {
+			card_flags_[index] = 0;
 		}
 	}
 	for(uint8_t i = 0; i < numberOfIds; i++)

@@ -16,3 +16,20 @@ If you use sector 0 the library will use block 1&2, the only usable blocks in se
 If you use sector 1 or higher the library will use the first two blocks in that sector, potentially leaving the third block free for other data.
 
 By default the library uses sector 1, in early versions it used sector 0.
+
+## Methods
+
+		bool authoriseCard();													//Authorise this card for all IDs (For admins maybe?)
+		bool authoriseCard(uint8_t, bool append);								//Authorise this card for an ID
+		bool authoriseCard(const uint8_t*, uint8_t, bool append);				//Authorise this card for multiple IDs
+		bool revokeCardAuthorisation();											//Revoke all authorisations of this card
+		bool revokeCardAuthorisation(uint8_t);									//Revoke authorisation of this card for an ID
+		bool revokeCardAuthorisation(const uint8_t*, uint8_t);					//Revoke authorisation of this card for multiple IDs
+		bool checkCardAuthorisation(uint8_t);									//Is this card authorised for this ID?
+		bool checkCardAuthorisation(const uint8_t*, uint8_t);					//Is this card authorised for any of these IDs?
+		bool pollForCard();														//Poll to check if a card is there
+		bool cardPresent();														//Has a card just been presented?
+		bool cardChanged();														//Has it changed since the last card?
+		uint8_t* cardUID();														//Retrieve a pointer to the current UID
+		bool cardUID(uint32_t &uid);											//Retrieve the current UID into an uint32_t, if possible
+		uint8_t cardUIDsize();													//Size of the current UID

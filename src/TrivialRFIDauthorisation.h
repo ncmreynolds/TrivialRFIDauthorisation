@@ -22,8 +22,8 @@ class TrivialRFIDauthorisation {
 		void debug(Stream &);													//Enable debug output on a stream
 		#endif
 		bool authoriseCard();													//Authorise this card for all IDs (For admins maybe?)
-		bool authoriseCard(uint8_t);											//Authorise this card for an ID
-		bool authoriseCard(const uint8_t*, uint8_t);							//Authorise this card for multiple IDs
+		bool authoriseCard(uint8_t, bool append);								//Authorise this card for an ID
+		bool authoriseCard(const uint8_t*, uint8_t, bool append);				//Authorise this card for multiple IDs
 		bool revokeCardAuthorisation();											//Revoke all authorisations of this card
 		bool revokeCardAuthorisation(uint8_t);									//Revoke authorisation of this card for an ID
 		bool revokeCardAuthorisation(const uint8_t*, uint8_t);					//Revoke authorisation of this card for multiple IDs
