@@ -2,7 +2,7 @@
 
 
 
-- 0.1.4 Add to API to allow clearing of existing authorised while setting new ones in one action
+- 0.1.4 Add to API to allow clearing of existing authorised while setting new ones in one action. Added a new example and updated others to reflect this.
   
 - 0.1.3 Make sure all debugging strings are stored in flash
   
