@@ -1,5 +1,5 @@
 # Trivial RFID authorisation library
-An Arduino library providing trivial authorisation for access to up to 256 'things' (or groups of 'things') with a MIFARE Classic/1K RFID card. It acts as a wrapper for the MFRC522v2 RFID library.
+An Arduino library providing trivial authorisation for access to up to 256 'things' (or groups of 'things') with a MIFARE Classic/1K RFID card. It acts as a wrapper for the [MFRC522v2 RFID library](https://github.com/OSSLibraries/Arduino_MFRC522v2).
 
 This library is not 'secure' in any way, it is intended for use in props, homebrew games, LARP, escape room environments, fun maker projects and so on. The authorisation is stored on the card and security on this type of RFID cards is long compromised. They and the RC522 readers are however cheap and widely available.
 
