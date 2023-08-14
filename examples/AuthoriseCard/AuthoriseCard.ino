@@ -41,7 +41,7 @@ void loop() {
   rfid.pollForCard(); //Must run regularly to read and process the card
   if(rfid.cardPresent() == true && rfid.cardChanged() == true)
   {
-    bool result = rfid.authoriseCard(idToAuthorise);
+    bool result = rfid.authoriseCard(idToAuthorise);  //Authorises the card for an ID, as well as any existing authorised IDs
     Serial.println(F("*******************************"));
     Serial.print(F("Authorising card for ID:"));
     Serial.print(idToAuthorise);
