@@ -22,6 +22,8 @@ class TrivialRFIDauthorisation {
 		#if defined(ESP32)
 		TrivialRFIDauthorisation(uint8_t clkPin, uint8_t cipoPin,
 			uint8_t copiPin, uint8_t csPin);									//Constructor function with non-default SPI pins, which can be set freely on an ESP32
+		TrivialRFIDauthorisation(SPIClass &spiInterface, uint8_t clkPin, uint8_t cipoPin,
+			uint8_t copiPin, uint8_t csPin);									//Constructor function with non-default SPI interface and pins, which can be set freely on an ESP32
 		#endif
 		~TrivialRFIDauthorisation();											//Destructor function
 		bool begin(uint8_t sector = 1);											//Start the RFID authentication on a specific sector
@@ -54,7 +56,7 @@ class TrivialRFIDauthorisation {
 		#ifdef TrivialRFIDauthorisationSupportDebugging
 		Stream *debugStream_ = nullptr;											//The stream used for debugging
 		#endif
-		MFRC522DriverPinSimple rfid_ss_pin_;
+		MFRC522DriverPinSimple rfid_cs_pin_;
 		MFRC522DriverSPI rfid_driver_;
 		MFRC522 rfid_reader_;
 		MFRC522::MIFARE_Key keyA_;

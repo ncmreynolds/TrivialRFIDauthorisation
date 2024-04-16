@@ -32,3 +32,9 @@
 *.exe
 *.out
 *.app
+examples/CustomSPI/CheckCardAuthorisationESP32HSPI/debug.cfg
+examples/CustomSPI/CheckCardAuthorisationESP32HSPI/debug.svd
+examples/CustomSPI/CheckCardAuthorisationESP32HSPI/debug_custom.json
+examples/CustomSPI/CheckCardAuthorisationESP32/debug.cfg
+examples/CustomSPI/CheckCardAuthorisationESP32/debug.svd
+examples/CustomSPI/CheckCardAuthorisationESP32/debug_custom.json
