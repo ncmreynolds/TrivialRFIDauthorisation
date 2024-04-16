@@ -11,11 +11,18 @@
 #include <MFRC522Debug.h>
 #define TrivialRFIDauthorisationSupportDebugging
 //#define TrivialRFIDauthorisationSupportEncryption
+#if defined(ESP32)
+#include <SPI.h>
+#endif
 
 class TrivialRFIDauthorisation {
 
 	public:
-		TrivialRFIDauthorisation(uint8_t sspin);								//Constructor function
+		TrivialRFIDauthorisation(uint8_t cspin);								//Constructor function
+		#if defined(ESP32)
+		TrivialRFIDauthorisation(uint8_t clkPin, uint8_t cipoPin,
+			uint8_t copiPin, uint8_t csPin);									//Constructor function with non-default SPI pins, which can be set freely on an ESP32
+		#endif
 		~TrivialRFIDauthorisation();											//Destructor function
 		bool begin(uint8_t sector = 1);											//Start the RFID authentication on a specific sector
 		#ifdef TrivialRFIDauthorisationSupportDebugging

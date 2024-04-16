@@ -1,13 +1,26 @@
 #ifndef TrivialRFIDauthorisation_cpp
 #define TrivialRFIDauthorisation_cpp
 #include <TrivialRFIDauthorisation.h>
+#if defined(ESP32)
+#include <SPI.h>
+#endif
 
-TrivialRFIDauthorisation::TrivialRFIDauthorisation(const uint8_t pin)	:	//Constructor function and member constructors
-	rfid_ss_pin_(pin),
+TrivialRFIDauthorisation::TrivialRFIDauthorisation(const uint8_t cspin)	:	//Constructor function and member constructors
+	rfid_ss_pin_(cspin),
 	rfid_driver_{rfid_ss_pin_},
 	rfid_reader_{rfid_driver_}
 {
 }
+
+#if defined(ESP32)
+TrivialRFIDauthorisation::TrivialRFIDauthorisation(const uint8_t clkPin, const uint8_t cipoPin, const uint8_t copiPin, const uint8_t csPin)	:	//Constructor function and member constructors
+	rfid_ss_pin_(csPin),
+	rfid_driver_{rfid_ss_pin_},
+	rfid_reader_{rfid_driver_}
+{
+	SPI.begin(clkPin, cipoPin, copiPin, csPin);	//Start the default SPI interface with these pins
+}
+#endif
 
 TrivialRFIDauthorisation::~TrivialRFIDauthorisation()	//Destructor function
 {
